@@ -4,7 +4,8 @@ ConvnetGo 是一个基于 Go 语言开发的 P2P 网络连接工具，支持 Win
 
 ## 功能特点
 
-- 支持 Windows 和 Linux 系统
+- 支持 Windows、Linux 和 macOS 系统
+- 支持多架构：32位(386)和64位(amd64)
 - 基于 WebRTC 的 P2P 连接
 - TAP 虚拟网卡支持
 - 自动重连机制
@@ -22,6 +23,30 @@ ConvnetGo 是一个基于 Go 语言开发的 P2P 网络连接工具，支持 Win
 
 ### Linux
 - 需要 root 权限来创建和配置 TAP 设备
+
+## 构建说明
+
+### 本地构建
+
+项目提供了跨平台构建脚本：
+
+- Windows平台运行 `编译全平台.bat`
+- 编译后的文件将保存在 `build` 目录下
+
+### 自动发布流程
+
+项目使用GitHub Actions实现自动化构建和发布：
+
+1. 创建新的发布标签：
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+2. 推送标签后，GitHub Actions将自动：
+   - 构建所有平台的二进制文件
+   - 创建GitHub Release
+   - 上传构建产物
 
 ## 配置说明
 
@@ -95,35 +120,15 @@ convnetgo
 - 支持 NAT 穿透
 - 使用 TCP 长连接保持会话
 
-### 安全机制
+### 依赖项
 
-1. **数据加密**
-   - 使用 AES-CBC 模式加密敏感数据
-   - 随机生成 IV (初始化向量)
-   - 采用 PKCS7 填充标准
-   - Base64 编码传输加密数据
+- Go 1.22.1 或更高版本
+- 主要依赖包：
+  - github.com/pion/webrtc/v4
+  - github.com/pion/turn/v2
+  - github.com/google/gopacket
+  - github.com/labstack/echo
 
-2. **身份认证**
-   - 支持双重身份认证机制
-   - 私有身份（UUID）用于本地认证
-   - 公开身份（PublicID）用于 P2P 连接
+## 许可证
 
-3. **TURN 服务器安全**
-   - 使用 realm 域隔离
-   - 动态生成的认证密钥
-   - 基于用户名和密码的访问控制
-   - TURN 凭证通过 AES-CBC 加密传输
-
-## 注意事项
-
-1. 首次运行会自动生成配置文件
-2. Windows 系统必须预先安装 TAP 驱动
-3. 确保配置的端口范围在防火墙中已开放
-4. 服务端需要同时开放 TCP 和 UDP 端口
-5. 建议妥善保存生成的 UUID，它是客户端的唯一标识
-
-## TODO 功能
-
-- 黑名单功能
-- 端口屏蔽
-- 密码访问控制
+[MIT License](LICENSE)
