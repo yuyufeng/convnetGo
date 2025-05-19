@@ -1,61 +1,61 @@
 @echo off
-:: Go½»²æ±àÒë¶àÆ½Ì¨Åú´¦Àí½Å±¾
-:: ×÷Õß: DeepSeek Chat
-:: ÈÕÆÚ: %date%
-:: ¹¦ÄÜ: Í¬Ê±±àÒëLinux, Darwin(macOS), WindowsµÄ32Î»ºÍ64Î»°æ±¾
+:: Goäº¤å‰ç¼–è¯‘å¤šå¹³å°æ‰¹å¤„ç†è„šæœ¬
+:: ä½œè€…: DeepSeek Chat
+:: æ—¥æœŸ: %date%
+:: åŠŸèƒ½: åŒæ—¶ç¼–è¯‘Linux, Darwin(macOS), Windowsçš„32ä½å’Œ64ä½ç‰ˆæœ¬
 
 setlocal enabledelayedexpansion
 
-:: ÉèÖÃÊä³öÄ¿Â¼
+:: è®¾ç½®è¾“å‡ºç›®å½•
 set OUTPUT_DIR=build
 if not exist "%OUTPUT_DIR%" mkdir "%OUTPUT_DIR%"
 
-:: ÉèÖÃ³ÌÐòÃû³Æ(²»´øÀ©Õ¹Ãû)
+:: è®¾ç½®ç¨‹åºåç§°(ä¸å¸¦æ‰©å±•å)
 set APP_NAME=convnetgo
 
-:: Çå¿Õ¾É¹¹½¨
-echo ÕýÔÚÇåÀí¾É¹¹½¨ÎÄ¼þ...
+:: æ¸…ç©ºæ—§æž„å»º
+echo æ­£åœ¨æ¸…ç†æ—§æž„å»ºæ–‡ä»¶...
 del /q "%OUTPUT_DIR%\*" >nul 2>&1
 
-:: Ö§³ÖµÄÆ½Ì¨ºÍ¼Ü¹¹×éºÏ
+:: æ”¯æŒçš„å¹³å°å’Œæž¶æž„ç»„åˆ
 set PLATFORMS=windows linux darwin
 set ARCHS=386 amd64
 
-:: ¿ªÊ¼¹¹½¨
-echo ¿ªÊ¼¿çÆ½Ì¨¹¹½¨...
+:: å¼€å§‹æž„å»º
+echo å¼€å§‹è·¨å¹³å°æž„å»º...
 
 for %%P in (%PLATFORMS%) do (
     for %%A in (%ARCHS%) do (
-        :: ÉèÖÃGO»·¾³±äÁ¿
+        :: è®¾ç½®GOçŽ¯å¢ƒå˜é‡
         set GOOS=%%P
         set GOARCH=%%A
         
-        :: È·¶¨ÎÄ¼þÀ©Õ¹Ãû
+        :: ç¡®å®šæ–‡ä»¶æ‰©å±•å
         if "%%P"=="windows" (
             set EXT=.exe
         ) else (
             set EXT=
         )
         
-        :: È·¶¨Êä³öÎÄ¼þÃû
-        set OUTPUT_FILE=%APP_NAME%-%%P-%%A%EXT%
+        :: ç¡®å®šè¾“å‡ºæ–‡ä»¶å
+        set OUTPUT_FILE=!APP_NAME!-%%P-%%A!EXT!
         
-        :: Ö´ÐÐ±àÒë
-        echo ÕýÔÚ¹¹½¨: %%P-%%A...
-        set "CMD=go env -w GOOS=%%P GOARCH=%%A && go build -ldflags="-s -w" -o %OUTPUT_DIR%\!OUTPUT_FILE!"
+        :: æ‰§è¡Œç¼–è¯‘
+        echo æ­£åœ¨æž„å»º: %%P-%%A...
+        set "CMD=go env -w GOOS=%%P GOARCH=%%A && go build -ldflags="-s -w" -o !OUTPUT_DIR!\!OUTPUT_FILE!"
         cmd /c "!CMD!"
         
         if errorlevel 1 (
-            echo [´íÎó] ¹¹½¨ %%P-%%A Ê§°Ü
+            echo [é”™è¯¯] æž„å»º %%P-%%A å¤±è´¥
         ) else (
-            echo [³É¹¦] ¹¹½¨Íê³É: !OUTPUT_FILE!
+            echo [æˆåŠŸ] æž„å»ºå®Œæˆ: !OUTPUT_FILE!
         )
     )
 )
 
 echo.
-echo ËùÓÐÆ½Ì¨¹¹½¨Íê³É!
-echo Êä³öÄ¿Â¼: %CD%\%OUTPUT_DIR%\
+echo æ‰€æœ‰å¹³å°æž„å»ºå®Œæˆ!
+echo è¾“å‡ºç›®å½•: %CD%\%OUTPUT_DIR%\
 dir /b "%OUTPUT_DIR%"
 
 pause
