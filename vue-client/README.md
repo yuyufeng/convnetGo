@@ -1,6 +1,6 @@
 # ConvnetGo Vue 客户端
 
-这是 ConvnetGo P2P 网络连接工具的 Vue 3 前端客户端。
+这是 ConvnetGo P2P 网络连接工具的 Vue 3 前端客户端，支持浏览器运行和打包成 Windows/macOS/Linux 桌面应用。
 
 ## 功能特性
 
@@ -17,7 +17,8 @@
 
 - Vue 3
 - Vite
-- 原生 CSS（CSS Variables）
+- Electron（桌面应用）
+- electron-builder（打包工具）
 
 ## 开发
 
@@ -28,7 +29,7 @@ cd vue-client
 npm install
 ```
 
-### 启动开发服务器
+### 启动 Web 开发服务器
 
 ```bash
 npm run dev
@@ -36,13 +37,72 @@ npm run dev
 
 开发服务器将在 http://localhost:3000 启动，并自动代理 API 请求到 `http://127.0.0.1:8094`。
 
-### 构建生产版本
+### 启动 Electron 开发模式
+
+```bash
+npm run electron:dev
+```
+
+## 构建
+
+### 构建 Web 版本
 
 ```bash
 npm run build
 ```
 
 构建产物将输出到 `dist` 目录。
+
+### 构建 Windows 桌面应用
+
+```bash
+npm run electron:build:win
+```
+
+这将在 `release` 目录下生成：
+- `ConvnetGo Setup x.x.x.exe` - Windows 安装程序 (NSIS)
+- `ConvnetGo x.x.x.exe` - 便携版
+
+### 构建 macOS 桌面应用
+
+```bash
+npm run electron:build:mac
+```
+
+### 构建 Linux 桌面应用
+
+```bash
+npm run electron:build:linux
+```
+
+### 构建所有平台
+
+```bash
+npm run electron:build
+```
+
+## 项目结构
+
+```
+vue-client/
+├── electron/
+│   └── main.cjs          # Electron 主进程
+├── public/
+│   └── favicon.svg       # 应用图标
+├── src/
+│   ├── api/
+│   │   └── index.js      # API 服务层
+│   ├── assets/
+│   │   └── main.css      # 全局样式
+│   ├── components/
+│   │   ├── ClientInfo.vue    # 客户端信息组件
+│   │   └── UserList.vue      # 用户列表组件
+│   ├── App.vue           # 主应用组件
+│   └── main.js           # 入口文件
+├── index.html
+├── package.json
+└── vite.config.js
+```
 
 ## API 接口
 
@@ -59,9 +119,24 @@ npm run build
 
 ## 使用说明
 
+### Web 模式
+
 1. 确保 ConvnetGo 后端服务正在运行（默认监听 127.0.0.1:8094）
 2. 启动 Vue 客户端开发服务器
 3. 在浏览器中访问 http://localhost:3000
-4. 配置服务器地址和端口，点击"连接服务器"
-5. 连接成功后，可以在用户列表中查看在线节点
-6. 点击"连接"按钮可以与其他节点建立 P2P 连接
+
+### 桌面应用模式
+
+1. 确保 ConvnetGo 后端服务正在运行
+2. 运行打包好的桌面应用程序
+3. 应用会自动连接到本地后端服务 (127.0.0.1:8094)
+
+## 注意事项
+
+- 桌面应用需要 ConvnetGo 后端服务在本地运行
+- Windows 打包需要在 Windows 系统上进行（或使用 CI/CD）
+- macOS 打包需要在 macOS 系统上进行
+- 如需自定义应用图标，请替换 `public/` 目录下的图标文件：
+  - Windows: `icon.ico`
+  - macOS: `icon.icns`
+  - Linux: `icon.png`
