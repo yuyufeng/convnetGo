@@ -1,0 +1,174 @@
+/* CSS Variables - Light Mode */
+:root {
+  --primary-color: #3b82f6;
+  --primary-hover: #2563eb;
+
+  --bg-primary: #f5f7fa;
+  --card-bg: #ffffff;
+  --header-bg: #ffffff;
+  --input-bg: #ffffff;
+  --disabled-bg: #f3f4f6;
+  --hover-bg: #f9fafb;
+  --code-bg: #f3f4f6;
+  --table-header-bg: #f9fafb;
+
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+
+  --border-color: #e5e7eb;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+
+  --avatar-bg: #e5e7eb;
+  --avatar-text: #374151;
+
+  --badge-bg: #e5e7eb;
+  --badge-offline-bg: #f3f4f6;
+  --badge-offline-text: #6b7280;
+
+  --btn-bg: #f3f4f6;
+}
+
+/* CSS Variables - Dark Mode */
+.dark-mode {
+  --bg-primary: #0f172a;
+  --card-bg: #1e293b;
+  --header-bg: #1e293b;
+  --input-bg: #334155;
+  --disabled-bg: #1e293b;
+  --hover-bg: #334155;
+  --code-bg: #334155;
+  --table-header-bg: #1e293b;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+
+  --border-color: #334155;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+
+  --avatar-bg: #334155;
+  --avatar-text: #e2e8f0;
+
+  --badge-bg: #334155;
+  --badge-offline-bg: #1e293b;
+  --badge-offline-text: #94a3b8;
+
+  --btn-bg: #334155;
+}
+
+/* Reset and Base Styles */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  font-size: 14px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+code {
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Liberation Mono', monospace;
+}
+
+/* Utility Classes */
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Selection */
+::selection {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* Focus Styles */
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white;
+  }
+
+  .app-header,
+  .app-footer {
+    display: none;
+  }
+}
