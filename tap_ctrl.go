@@ -51,7 +51,10 @@ func Setip() {
 	self := GetCvnIP(userid)
 	log.Info("myCvnIP:", self)
 	client.MyCvnIP = self.String()
-	setupIfce(net.IPNet{IP: self, Mask: mask}, client.g_ifce.Name()) //网卡地址绑定
+	err := setupIfce(net.IPNet{IP: self, Mask: mask}, client.g_ifce.Name()) //网卡地址绑定
+	if err != nil {
+		log.Fatal(err)
+	}
 
 }
 
