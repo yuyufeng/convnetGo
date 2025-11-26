@@ -48,6 +48,10 @@
               :users="userList"
               @refresh="fetchUserList"
             />
+            <ChatPanel
+              :users="userList"
+              class="chat-section"
+            />
           </div>
         </div>
       </div>
@@ -62,6 +66,7 @@
 <script>
 import ClientInfo from './components/ClientInfo.vue'
 import UserList from './components/UserList.vue'
+import ChatPanel from './components/ChatPanel.vue'
 import { getClientInfo, getUserList } from './api'
 
 export default {
@@ -69,7 +74,8 @@ export default {
 
   components: {
     ClientInfo,
-    UserList
+    UserList,
+    ChatPanel
   },
 
   data() {
@@ -223,6 +229,16 @@ export default {
   position: sticky;
   top: 90px;
   height: fit-content;
+}
+
+.grid-content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.chat-section {
+  margin-top: 0;
 }
 
 .app-footer {

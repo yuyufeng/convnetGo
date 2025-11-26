@@ -99,6 +99,9 @@ func main() {
 	http.HandleFunc("/api/client/connect", clientConnectToServer)
 	http.HandleFunc("/api/client/disconnect", clientDisconnect)
 	http.HandleFunc("/api/client/allowConnect", allowConnect)
+	http.HandleFunc("/api/chat/send", sendChatMessageAPI)
+	http.HandleFunc("/api/chat/history", getChatHistoryAPI)
+	http.HandleFunc("/api/chat/clear", clearChatHistoryAPI)
 	//CheckNat(client.UdpServerPort)
 
 	go TapInit()

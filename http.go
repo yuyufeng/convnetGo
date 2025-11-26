@@ -178,6 +178,73 @@ func getClientInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(ToJson(client)))
 }
+// 发送聊天消息
+func sendChatMessageAPI(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != "POST" {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		w.Write([]byte(`{"status": "error", "message": "Method not allowed"}`))
+		return
+	}
+
+	var reqBody struct {
+		To      string `json:"to"`      // 接收者 PublicID，空表示广播
+		Content string `json:"content"` // 消息内容
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"status": "error", "message": "Invalid request body"}`))
+		return
+	}
+
+	if reqBody.Content == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"status": "error", "message": "Content is required"}`))
+		return
+	}
+
+	msg, err := SendChatMessage(reqBody.To, reqBody.Content)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(`{"status": "error", "message": "` + err.Error() + `"}`))
+		return
+	}
+
+	w.Write([]byte(ToJson(map[string]interface{}{
+		"status":  "success",
+		"message": msg,
+	})))
+}
+
+// 获取聊天历史
+func getChatHistoryAPI(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	publicID := r.URL.Query().Get("publicId")
+	limitStr := r.URL.Query().Get("limit")
+	limit := 100
+	if limitStr != "" {
+		if l, err := strconv.Atoi(limitStr); err == nil {
+			limit = l
+		}
+	}
+
+	history := GetChatHistory(publicID, limit)
+	w.Write([]byte(ToJson(map[string]interface{}{
+		"status":   "success",
+		"messages": history,
+	})))
+}
+
+// 清空聊天历史
+func clearChatHistoryAPI(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	ClearChatHistory()
+	w.Write([]byte(`{"status": "success", "message": "Chat history cleared"}`))
+}
+
 func getUserList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json") // 设置响应头
 	//w.Write([]byte("ToJson(allUserlist)"))

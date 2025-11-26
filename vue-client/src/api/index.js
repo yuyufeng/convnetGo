@@ -102,6 +102,37 @@ export async function updateAllowConnectPassword(password) {
 }
 
 /**
+ * 发送聊天消息
+ * @param {string} to - 接收者 PublicID，空字符串表示群发
+ * @param {string} content - 消息内容
+ */
+export async function sendChatMessage(to, content) {
+  return request('/chat/send', {
+    method: 'POST',
+    body: JSON.stringify({ to, content })
+  })
+}
+
+/**
+ * 获取聊天历史
+ * @param {string} publicId - 指定用户的 PublicID，空字符串表示获取所有
+ * @param {number} limit - 返回消息数量限制
+ */
+export async function getChatHistory(publicId = '', limit = 100) {
+  const params = new URLSearchParams()
+  if (publicId) params.append('publicId', publicId)
+  if (limit) params.append('limit', limit.toString())
+  return request(`/chat/history?${params.toString()}`)
+}
+
+/**
+ * 清空聊天历史
+ */
+export async function clearChatHistory() {
+  return request('/chat/clear')
+}
+
+/**
  * 格式化字节数为可读格式
  * @param {number} bytes - 字节数
  * @returns {string} 格式化后的字符串

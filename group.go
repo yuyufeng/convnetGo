@@ -172,6 +172,11 @@ func reInitPc(user *User) bool {
 
 		dc.OnMessage(func(msg webrtc.DataChannelMessage) {
 			user.Con_recv = user.Con_recv + int64(len(msg.Data))
+			// 检查是否是聊天消息
+			if IsChatMessage(msg.Data) {
+				HandleIncomingChatMessage(msg.Data, user)
+				return
+			}
 			fmt.Println("dc <<<:", len(msg.Data))
 			writePacket(msg.Data)
 		})
@@ -270,6 +275,11 @@ func peerConnectionUpdate(user *User, step string) {
 		// 3. 设置 DataChannel回调（接收数据）
 		dc.OnMessage(func(msg webrtc.DataChannelMessage) {
 			user.Con_recv = user.Con_recv + int64(len(msg.Data))
+			// 检查是否是聊天消息
+			if IsChatMessage(msg.Data) {
+				HandleIncomingChatMessage(msg.Data, user)
+				return
+			}
 			log.Debug("dcc <<<", len(msg.Data))
 			writePacket(msg.Data)
 		})
