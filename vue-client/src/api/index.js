@@ -2,7 +2,11 @@
  * ConvnetGo API 服务层
  */
 
-const API_BASE = '/api'
+// 检测是否在 Electron 环境中运行
+const isElectron = window.location.protocol === 'file:'
+
+// 在 Electron 中使用完整的后端地址，在浏览器中使用相对路径（通过 Vite 代理）
+const API_BASE = isElectron ? 'http://127.0.0.1:8094/api' : '/api'
 
 /**
  * 通用请求方法
