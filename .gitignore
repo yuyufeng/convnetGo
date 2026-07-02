@@ -1,0 +1,26 @@
+# --- Qt 客户端构建产物 ---
+convnet-qt/build/
+convnet-qt/build-linux/
+convnet-qt/build-win/
+convnet-qt/release/
+convnet-qt/CMakeCache.txt
+convnet-qt/CMakeFiles/
+convnet-qt/*.user
+convnet-qt/build_err*
+convnet-qt/aqtinstall.log
+convnet-qt/nul
+
+# --- 第三方源码（单独克隆，见 convnet-qt/README.md，勿入库）---
+convnet-qt/libdatachannel/
+
+# --- 服务端运行时数据（勿入库）---
+convnet.db
+uuid_to_userid.json
+
+# --- 交叉编译的服务端二进制（应放到 GitHub Release，勿入库）---
+convnetgo-linux-amd64
+convnetgo-linux-arm64
+
+# --- 旧 Vue 客户端 lockfile（逐步淘汰）---
+package-lock.json
+vue-client/package-lock.json

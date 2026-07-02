@@ -43,6 +43,25 @@ func main() {
 
 	if len(os.Args) > 1 && os.Args[1] == "-s" { //服务端模式
 		fmt.Println("Starting server...")
+
+		// 初始化 IM 持久化层（好友/群组/黑白名单/离线消息）
+		if err := StoreInit("convnet.db"); err != nil {
+			log.Fatalf("Failed to init store: %v", err)
+		}
+
+		// 中继准入/限速控制 + 管理后台
+		relayCtl = NewRelayControl()
+		relayCtl.LoadFrom(store)
+		adminPort := client.AdminPort
+		if adminPort == "" {
+			adminPort = "8099"
+		}
+		adminPass := client.AdminPassword
+		if adminPass == "" {
+			adminPass = "admin"
+		}
+		StartAdminServer(adminPort, adminPass)
+
 		// 使用实际的公网IP地址
 		// 获取服务器的实际IP地址
 		publicIP := "1.95.54.7" // 默认IP地址

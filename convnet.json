@@ -4,28 +4,5 @@
   "ServerTurnPort": "13902",
   "ServerTurnUser": "ddd",
   "ServerTurnPass": "vvv",
-  "ServerTurnRealm": "saiboot.com",
-  "UUID": "488481fa-73d5-4813-bcbf-778fbc65a522",
-  "ClientID": "飞翔的小笼包",
-  "AutoConnectPassword": "123123",
-  "AllowTcpPortRange": [
-    {
-      "Start": 10000,
-      "End": 20000
-    },
-    {
-      "Start": 10000,
-      "End": 20000
-    }
-  ],
-  "AllowUdpPortRange": [
-    {
-      "Start": 10000,
-      "End": 20000
-    },
-    {
-      "Start": 10000,
-      "End": 20000
-    }
-  ]
+  "ServerTurnRealm": "saiboot.com"
 }

@@ -254,6 +254,7 @@ func handleServerConnection(cvClient peerClient) {
 
 		conn.Close() // 处理完成后关闭连接
 		serverConnMap.Delete(cvClient.PublicID)
+		onClientDisconnected(cvClient.PublicID) // 通知网络对端下线
 		log.Info("连接断开>", cvClient.PublicID, "<")
 	}()
 
@@ -368,7 +369,17 @@ func handleServerConnection(cvClient peerClient) {
 					cvClient.MainClientInfo = &mainClientInfo
 					//使用publicid作为主键存储服务器信息
 					serverConnMap.Store(mainClientInfo.PublicID, newServerconn)
-					sendToConn(conn, WS_REGISTE_RESP, []interface{}{mainClientInfo.PublicID})
+					persistIdentityOnRegister(&cvClient) // 身份落库（必须在响应前）
+					// 回传服务器登记的权威昵称：客户端据此显示/校准，也支持换设备后取回昵称。
+					// （QQ 模型：userID 唯一，昵称可重复、可被搜索）
+					regNick := mainClientInfo.Name
+					if store != nil {
+						if u, ok := store.GetUser(userIDFromPublicID(mainClientInfo.PublicID)); ok && u.Nick != "" {
+							regNick = u.Nick
+						}
+					}
+					sendToConn(conn, WS_REGISTE_RESP, []interface{}{mainClientInfo.PublicID, regNick, mainClientInfo.IP})
+					onClientRegistered(&cvClient) // 广播上线、下发离线申请/消息
 				}
 			case C_GETWS_SERVER_INFO: //获取客户端的身份
 				{
@@ -411,6 +422,13 @@ func handleServerConnection(cvClient peerClient) {
 					}
 
 				}
+			case ACCOUNT_REGISTER:
+				handleAccountAuth(&cvClient, true, clientMessage.Message)
+			case ACCOUNT_LOGIN:
+				handleAccountAuth(&cvClient, false, clientMessage.Message)
+			default:
+				// IM 层 opcode（好友/群组/在线态/聊天/ACL/中继）
+				handleIM(&cvClient, clientMessage.CMDType, clientMessage.Message)
 			}
 
 		}

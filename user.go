@@ -34,6 +34,9 @@ type ClientServer struct {
 	AllowUdpPortRange   []PortRange
 	RetryConnect        bool
 
+	AdminPort     string // 管理后台端口（默认 8099）
+	AdminPassword string // 管理后台密码（Basic Auth，默认 admin）
+
 	PublicID    string
 	Mac         string
 	IsConnected bool
