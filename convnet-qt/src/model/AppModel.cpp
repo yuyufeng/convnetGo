@@ -102,8 +102,11 @@ void AppModel::startNetwork()
     const QString ip = Identity::instance().myCvnIP;
     if (ip.isEmpty())
         return;
+    const NicMode mode =
+        (Identity::instance().nicMode == QLatin1String("tap")) ? NicMode::Tap : NicMode::Tun;
+    m_router->setLayer2(mode == NicMode::Tap);
     QString err;
-    if (!m_tap->start(ip, 8, [this](const QByteArray& p) { m_router->routeOutbound(p); }, err)) {
+    if (!m_tap->start(ip, 8, mode, [this](const QByteArray& p) { m_router->routeOutbound(p); }, err)) {
         m_tapUp = false;
         m_tapIfName.clear();
         m_tapError = err;
@@ -119,18 +122,47 @@ void AppModel::startNetwork()
     rebuildRoutes();
 }
 
+QString AppModel::nicMode() const { return Identity::instance().nicMode; }
+
+void AppModel::setNicMode(const QString& mode)
+{
+    const QString m = (mode == QLatin1String("tap")) ? QStringLiteral("tap") : QStringLiteral("tun");
+    if (Identity::instance().nicMode == m)
+        return;
+    Identity::instance().nicMode = m;
+    Identity::instance().save();
+    // 重启网卡使新模式生效（P2P 链路保留）
+    if (m_netStarted) {
+        m_tap->stop();
+        m_netStarted = false;
+        m_tapUp = false;
+        m_tapIfName.clear();
+        emit networkStatusChanged();
+        startNetwork();
+    }
+}
+
 void AppModel::rebuildRoutes()
 {
     if (!m_router)
         return;
     m_router->clearRoutes();
-    for (const FriendInfo& f : m_friends)
-        if (!f.cvnIP.isEmpty() && !f.publicId.isEmpty())
+    // 两种模式都登记对端集合（L2 广播 fanout 用）；L3 额外建 cvnIP->对端 路由。排除自己。
+    for (const FriendInfo& f : m_friends) {
+        if (f.publicId.isEmpty() || f.publicId == m_publicId)
+            continue;
+        m_router->addPeer(f.publicId);
+        if (!f.cvnIP.isEmpty())
             m_router->setRoute(Router::parseIpv4(f.cvnIP), f.publicId);
+    }
     for (const GroupInfo& g : m_groups)
-        for (const FriendInfo& mem : g.members)
-            if (!mem.cvnIP.isEmpty() && !mem.publicId.isEmpty())
+        for (const FriendInfo& mem : g.members) {
+            if (mem.publicId.isEmpty() || mem.publicId == m_publicId)
+                continue;
+            m_router->addPeer(mem.publicId);
+            if (!mem.cvnIP.isEmpty())
                 m_router->setRoute(Router::parseIpv4(mem.cvnIP), mem.publicId);
+        }
 }
 
 void AppModel::connectOnlinePeers()

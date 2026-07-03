@@ -27,6 +27,8 @@ void Identity::ensureDefaults()
         serverHost = QStringLiteral("127.0.0.1");
     if (serverPort == 0)
         serverPort = 13903;
+    if (nicMode != QLatin1String("tap"))
+        nicMode = QStringLiteral("tun"); // 默认 TUN
 }
 
 void Identity::load()
@@ -39,6 +41,7 @@ void Identity::load()
     mac = s.value("mac").toString();
     serverHost = s.value("serverHost", "127.0.0.1").toString();
     serverPort = static_cast<quint16>(s.value("serverPort", 13903).toUInt());
+    nicMode = s.value("nicMode", "tun").toString();
     ensureDefaults();
     save(); // 回写首次生成的默认值（如伪 MAC）
 }
@@ -56,6 +59,7 @@ void Identity::save()
     s.setValue("mac", mac);
     s.setValue("serverHost", serverHost);
     s.setValue("serverPort", serverPort);
+    s.setValue("nicMode", nicMode);
 }
 
 quint64 Identity::userId() const

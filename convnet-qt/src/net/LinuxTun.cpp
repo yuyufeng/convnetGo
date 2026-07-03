@@ -22,10 +22,12 @@ bool LinuxTun::open(QString& ifName, const QString& ip, int prefixLen, QString& 
         return false;
     }
 
+    const bool tap = (m_mode == NicMode::Tap);
     struct ifreq ifr;
     std::memset(&ifr, 0, sizeof(ifr));
-    ifr.ifr_flags = IFF_TUN | IFF_NO_PI; // L3、无 4 字节包信息前缀
-    std::strncpy(ifr.ifr_name, "cvn0", IFNAMSIZ - 1);
+    // TAP=L2 收发以太网帧；TUN=L3 收发裸 IP 包；均 IFF_NO_PI（无 4 字节前缀）
+    ifr.ifr_flags = (tap ? IFF_TAP : IFF_TUN) | IFF_NO_PI;
+    std::strncpy(ifr.ifr_name, tap ? "cvntap0" : "cvn0", IFNAMSIZ - 1);
 
     if (::ioctl(m_fd, TUNSETIFF, &ifr) < 0) {
         err = QStringLiteral("TUNSETIFF 失败（%1）").arg(std::strerror(errno));
@@ -36,7 +38,8 @@ bool LinuxTun::open(QString& ifName, const QString& ip, int prefixLen, QString& 
     m_ifName = QString::fromUtf8(ifr.ifr_name);
     ifName = m_ifName;
 
-    // 配置地址并启用（用 ip 命令，简单可靠；需 root）
+    // 配置地址并启用（用 ip 命令，简单可靠；需 root）。
+    // TAP 模式下内核会给接口分配随机 MAC（唯一），学习式交换据此转发，无需额外设定。
     const QString addCmd = QStringLiteral("ip addr add %1/%2 dev %3 2>/dev/null")
                                .arg(ip).arg(prefixLen).arg(m_ifName);
     const QString upCmd = QStringLiteral("ip link set dev %1 up").arg(m_ifName);
@@ -81,6 +84,6 @@ void LinuxTun::close()
     }
 }
 
-ITapDevice* createTapDevice() { return new LinuxTun(); }
+ITapDevice* createTapDevice(NicMode mode) { return new LinuxTun(mode); }
 
 #endif // __linux__

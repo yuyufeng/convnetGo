@@ -12,6 +12,8 @@
 #include <mutex>
 #include <functional>
 
+#include "net/ITapDevice.h" // NicMode
+
 class ITapDevice;
 
 class TapManager : public QObject {
@@ -20,11 +22,12 @@ public:
     explicit TapManager(QObject* parent = nullptr);
     ~TapManager() override;
 
-    // 启动网卡：ip=本机虚拟IP，prefixLen=8；outbound=读到的包回调（读线程调用）。
-    bool start(const QString& ip, int prefixLen,
+    // 启动网卡：ip=本机虚拟IP，prefixLen=8，mode=TUN/TAP；outbound=读到的包/帧回调（读线程调用）。
+    bool start(const QString& ip, int prefixLen, NicMode mode,
                std::function<void(const QByteArray&)> outbound, QString& err);
     void stop();
     bool isRunning() const { return m_running.load(); }
+    bool isLayer2() const { return m_layer2; } // TAP=true
 
     void write(const QByteArray& packet); // 入站写网卡，线程安全
     QString ifName() const { return m_ifName; }
@@ -37,6 +40,7 @@ private:
     void readLoop();
 
     ITapDevice* m_dev = nullptr;
+    bool m_layer2 = false;
     std::thread m_thread;
     std::atomic<bool> m_running{false};
     std::mutex m_writeMtx;

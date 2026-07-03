@@ -24,6 +24,7 @@ public:
     QString mac;             // 伪 MAC（M2 仅作标识；M3 由 TAP 网卡接管）
     QString serverHost;      // 默认 127.0.0.1
     quint16 serverPort = 13903;
+    QString nicMode;         // 虚拟网卡模式 "tun"(L3,默认) / "tap"(L2，承载 IPX/广播)
 
     // 运行期：登录后服务器返回
     QString publicId;        // md5(account):userID

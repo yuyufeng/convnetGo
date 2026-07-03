@@ -97,3 +97,22 @@ bool Firewall::allow(quint64 peerUserId, int direction, const QByteArray& packet
     }
     return true; // 默认放行
 }
+
+bool Firewall::peerBlocked(quint64 peerUserId, int direction) const
+{
+    std::lock_guard<std::mutex> lk(m_mtx);
+    for (const FwRule& r : m_rules) {
+        if (!r.enabled)
+            continue;
+        if (r.direction != 0 && r.direction != direction)
+            continue;
+        if (r.peerUserId != 0 && r.peerUserId != peerUserId)
+            continue;
+        if (r.protocol != 0) // 带协议限定 -> 属端口/协议规则，L2 不评估
+            continue;
+        if (r.portHigh > 0) // 带端口限定 -> 同上
+            continue;
+        return r.action == 1; // 命中纯对端规则：拒绝=true(阻断)
+    }
+    return false; // 无命中：不阻断
+}

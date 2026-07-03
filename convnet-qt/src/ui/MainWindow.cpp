@@ -22,6 +22,7 @@
 #include <QAction>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QPushButton>
 #include <QTimer>
 #include <QVariant>
 #include <QColor>
@@ -855,12 +856,43 @@ void MainWindow::showNetworkStatus()
                    .arg(reason);
     }
 
+    const bool tapMode = (m_model->nicMode() == QLatin1String("tap"));
+    html += QStringLiteral(
+                "<br><hr><b>网卡模式：%1</b><br>"
+                "<span style='color:#888;font-size:small'>%2</span>")
+                .arg(tapMode ? QStringLiteral("TAP（L2，承载 IPX 等非 IP 协议 + 局域网广播发现）")
+                             : QStringLiteral("TUN（L3，按目的 IP 路由，默认）"),
+                     QStringLiteral("同一虚拟局域网内所有人必须用相同模式；TAP 需以管理员运行，"
+                                    "Windows 还需安装 tap-windows6（OpenVPN TAP）驱动。"));
+
     QMessageBox box(this);
     box.setWindowTitle(QStringLiteral("网卡状态"));
     box.setTextFormat(Qt::RichText);
     box.setText(html);
     box.setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
+    QPushButton* btnSwitch = box.addButton(QStringLiteral("切换 TUN/TAP…"), QMessageBox::ActionRole);
+    box.addButton(QMessageBox::Close);
     box.exec();
+
+    if (box.clickedButton() == btnSwitch) {
+        const QStringList items = {QStringLiteral("TUN（L3，默认）"),
+                                   QStringLiteral("TAP（L2，IPX/广播）")};
+        bool ok = false;
+        const QString sel = QInputDialog::getItem(
+            this, QStringLiteral("网卡模式"),
+            QStringLiteral("选择虚拟网卡模式（切换会重启网卡；同一虚拟网内所有人须一致）："),
+            items, tapMode ? 1 : 0, false, &ok);
+        if (ok) {
+            const QString mode =
+                sel.startsWith(QStringLiteral("TAP")) ? QStringLiteral("tap") : QStringLiteral("tun");
+            m_model->setNicMode(mode);
+            QMessageBox::information(
+                this, QStringLiteral("网卡模式"),
+                QStringLiteral("已切换为 %1。TAP 模式下 Windows 需 tap-windows6 驱动且以管理员运行；"
+                               "若虚拟网卡未按预期启动，请再看「网卡状态」。")
+                    .arg(mode.toUpper()));
+        }
+    }
 }
 
 // ---- 新消息提示（未读徽标 + 闪烁）----

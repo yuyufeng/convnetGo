@@ -29,6 +29,10 @@ public:
     // direction: 1=入站, 2=出站。返回 true=放行。
     bool allow(quint64 peerUserId, int direction, const QByteArray& packet) const;
 
+    // L2/TAP：仅按对端做“拉黑”判定（忽略帧内容；带协议/端口限定的规则在 L2 不适用）。
+    // 返回 true=该对端被阻断。
+    bool peerBlocked(quint64 peerUserId, int direction) const;
+
 private:
     mutable std::mutex m_mtx;
     QVector<FwRule> m_rules;

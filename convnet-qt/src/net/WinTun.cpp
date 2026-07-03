@@ -1,6 +1,7 @@
 #ifdef _WIN32
 
 #include "net/WinTun.h"
+#include "net/WinTap.h"
 
 #include <windows.h>
 #include <cstring>
@@ -143,6 +144,12 @@ void WinTun::close()
     }
 }
 
-ITapDevice* createTapDevice() { return new WinTun(); }
+// 工厂：TAP 模式用 tap-windows6（WinTap），TUN 模式用 Wintun（WinTun）。
+ITapDevice* createTapDevice(NicMode mode)
+{
+    if (mode == NicMode::Tap)
+        return new WinTap();
+    return new WinTun();
+}
 
 #endif // _WIN32

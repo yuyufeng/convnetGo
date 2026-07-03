@@ -11,19 +11,20 @@ TapManager::TapManager(QObject* parent) : QObject(parent) {}
 
 TapManager::~TapManager() { stop(); }
 
-bool TapManager::start(const QString& ip, int prefixLen,
+bool TapManager::start(const QString& ip, int prefixLen, NicMode mode,
                        std::function<void(const QByteArray&)> outbound, QString& err)
 {
     if (m_running.load())
         return true;
 
-    m_dev = createTapDevice();
+    m_dev = createTapDevice(mode);
     QString ifn;
     if (!m_dev->open(ifn, ip, prefixLen, err)) {
         delete m_dev;
         m_dev = nullptr;
         return false;
     }
+    m_layer2 = m_dev->isLayer2();
     m_ifName = ifn;
     m_outbound = std::move(outbound);
     m_running.store(true);

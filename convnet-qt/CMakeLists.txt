@@ -85,9 +85,13 @@ add_executable(convnet-qt
     src/ui/FirewallDialog.cpp
 )
 
-# 平台相关的 TUN 后端：Linux 用 /dev/net/tun，Windows 用 Wintun
+# 平台相关的网卡后端：
+#   Windows：Wintun(TUN) + tap-windows6(TAP)
+#   Linux：  /dev/net/tun（IFF_TUN/IFF_TAP）
 if(WIN32)
-    target_sources(convnet-qt PRIVATE src/net/WinTun.h src/net/WinTun.cpp)
+    target_sources(convnet-qt PRIVATE
+        src/net/WinTun.h src/net/WinTun.cpp
+        src/net/WinTap.h src/net/WinTap.cpp)
 else()
     target_sources(convnet-qt PRIVATE src/net/LinuxTun.h src/net/LinuxTun.cpp)
 endif()
