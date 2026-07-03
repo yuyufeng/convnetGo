@@ -260,6 +260,26 @@ MainWindow::MainWindow(AppModel* model, QWidget* parent)
     ch->addLayout(col, 1);
     cv->addWidget(card);
 
+    // 网卡模式不一致告警条（默认隐藏；检测到在线对端模式与本机不同时显示，可一键切换适配）
+    m_modeWarnBar = new QFrame(central);
+    m_modeWarnBar->setVisible(false);
+    m_modeWarnBar->setStyleSheet(QStringLiteral(
+        "QFrame{background:#3a1d1f;border:1px solid #f85149;border-radius:6px;}"
+        "QLabel{color:#ffb3ae;background:transparent;}"));
+    auto* warnRow = new QHBoxLayout(m_modeWarnBar);
+    warnRow->setContentsMargins(10, 6, 10, 6);
+    warnRow->setSpacing(8);
+    m_modeWarnLabel = new QLabel(m_modeWarnBar);
+    m_modeWarnLabel->setWordWrap(true);
+    m_modeWarnBtn = new QPushButton(m_modeWarnBar);
+    warnRow->addWidget(m_modeWarnLabel, 1);
+    warnRow->addWidget(m_modeWarnBtn, 0, Qt::AlignVCenter);
+    connect(m_modeWarnBtn, &QPushButton::clicked, this, [this]() {
+        if (!m_suggestMode.isEmpty())
+            m_model->setNicMode(m_suggestMode); // 一键把本机切到对端多数模式
+    });
+    cv->addWidget(m_modeWarnBar);
+
     // 树：两列（名称 / 虚拟IP），顶层「好友」「群组」可折叠
     m_tree = new QTreeWidget(central);
     m_tree->setHeaderHidden(true);
@@ -450,14 +470,19 @@ void MainWindow::onFriendsChanged()
 
     // friends() 已按“在线优先、其次 userID”排序，故在线的自然靠前
     const auto friends = m_model->friends();
+    const QString myMode = m_model->nicMode();
     m_friendRoot->setText(0, QStringLiteral("好友 (%1)").arg(friends.size()));
     for (const FriendInfo& f : friends) {
         const QString nick = f.nick.isEmpty() ? QStringLiteral("(无昵称)") : f.nick;
         const QString key = QStringLiteral("u:%1").arg(f.userId);
+        const bool modeMism = f.online && !f.nicMode.isEmpty() && f.nicMode != myMode;
+        const QString modeTag = modeMism
+            ? QStringLiteral("  ⚠%1").arg(f.nicMode == QLatin1String("tap") ? "TAP" : "TUN") : QString();
         auto* item = new QTreeWidgetItem(m_friendRoot);
-        item->setText(0, unreadBadge(key) + nick);
+        item->setText(0, unreadBadge(key) + nick + modeTag);
         item->setIcon(0, makeAvatar(nick, f.online, m_model->peerRttMs(f.publicId))); // 信号格+头像
-        item->setForeground(0, f.online ? QColor("#e6e9ee") : QColor("#8b929b"));
+        item->setForeground(0, modeMism ? QColor("#f85149")
+                                        : (f.online ? QColor("#e6e9ee") : QColor("#8b929b")));
         item->setText(1, f.cvnIP);                     // 右列显示虚拟IP（Radmin 风格）
         item->setForeground(1, QColor("#8b929b"));
         item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
@@ -480,6 +505,7 @@ void MainWindow::onGroupsChanged()
         delete m_groupRoot->takeChild(i);
 
     const auto groups = m_model->groups();
+    const QString myMode = m_model->nicMode();
     m_groupRoot->setText(0, QStringLiteral("群组 (%1)").arg(groups.size()));
     for (const GroupInfo& g : groups) {
         const QString key = QStringLiteral("g:%1").arg(g.groupId);
@@ -503,10 +529,15 @@ void MainWindow::onGroupsChanged()
         for (const FriendInfo& mem : g.members) {
             const QString mnick = mem.nick.isEmpty() ? QStringLiteral("(无昵称)") : mem.nick;
             const QString self = (mem.userId == m_model->myUserId()) ? QStringLiteral("（我）") : QString();
+            const bool mMism = mem.userId != m_model->myUserId() && mem.online
+                            && !mem.nicMode.isEmpty() && mem.nicMode != myMode;
+            const QString mTag = mMism
+                ? QStringLiteral("  ⚠%1").arg(mem.nicMode == QLatin1String("tap") ? "TAP" : "TUN") : QString();
             auto* mi = new QTreeWidgetItem(item);
-            mi->setText(0, mnick + self);
+            mi->setText(0, mnick + self + mTag);
             mi->setIcon(0, makeAvatar(mnick, mem.online, m_model->peerRttMs(mem.publicId)));
-            mi->setForeground(0, mem.online ? QColor("#e6e9ee") : QColor("#8b929b"));
+            mi->setForeground(0, mMism ? QColor("#f85149")
+                                       : (mem.online ? QColor("#e6e9ee") : QColor("#8b929b")));
             mi->setText(1, mem.cvnIP);
             mi->setForeground(1, QColor("#8b929b"));
             mi->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
@@ -930,6 +961,30 @@ void MainWindow::rerenderLists()
 {
     onFriendsChanged();
     onGroupsChanged();
+    updateModeWarning();
+}
+
+void MainWindow::updateModeWarning()
+{
+    if (!m_modeWarnBar)
+        return;
+    int count = 0;
+    QString suggest;
+    if (m_model->nicModeMismatch(count, suggest)) {
+        m_suggestMode = suggest;
+        const QString mine = (m_model->nicMode() == QLatin1String("tap")) ? QStringLiteral("TAP")
+                                                                          : QStringLiteral("TUN");
+        const QString other = (suggest == QLatin1String("tap")) ? QStringLiteral("TAP")
+                                                                : QStringLiteral("TUN");
+        m_modeWarnLabel->setText(
+            QStringLiteral("⚠ %1 个在线对端用 %2 网卡模式，与你(%3)不一致，虚拟网络无法互通")
+                .arg(count)
+                .arg(other, mine));
+        m_modeWarnBtn->setText(QStringLiteral("切换为 %1").arg(other));
+        m_modeWarnBar->setVisible(true);
+    } else {
+        m_modeWarnBar->setVisible(false);
+    }
 }
 
 void MainWindow::scheduleRebuild()

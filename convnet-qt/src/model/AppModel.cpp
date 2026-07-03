@@ -13,6 +13,7 @@
 #include <QJsonObject>
 #include <QJsonValue>
 #include <QTimer>
+#include <QSet>
 
 #include <algorithm>
 
@@ -124,6 +125,36 @@ void AppModel::startNetwork()
 }
 
 QString AppModel::nicMode() const { return Identity::instance().nicMode; }
+
+bool AppModel::nicModeMismatch(int& count, QString& suggestMode) const
+{
+    const QString myMode = Identity::instance().nicMode;
+    QSet<quint64> seen;
+    int tap = 0, tun = 0;
+    auto tally = [&](const FriendInfo& f) {
+        if (f.userId == 0 || f.userId == m_userId)
+            return;
+        if (!f.online || f.nicMode.isEmpty() || f.nicMode == myMode)
+            return;
+        if (seen.contains(f.userId))
+            return; // 去重（同一人可能既是好友又是组员）
+        seen.insert(f.userId);
+        if (f.nicMode == QLatin1String("tap"))
+            ++tap;
+        else
+            ++tun;
+    };
+    for (const FriendInfo& f : m_friends)
+        tally(f);
+    for (const GroupInfo& g : m_groups)
+        for (const FriendInfo& mem : g.members)
+            tally(mem);
+    count = tap + tun;
+    if (count == 0)
+        return false;
+    suggestMode = (tap >= tun) ? QStringLiteral("tap") : QStringLiteral("tun"); // 多数对端的模式
+    return true;
+}
 
 void AppModel::setNicMode(const QString& mode)
 {

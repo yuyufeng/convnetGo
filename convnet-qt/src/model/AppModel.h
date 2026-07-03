@@ -67,6 +67,8 @@ public:
     QString tapError() const { return m_tapError; }
     QString nicMode() const;                     // "tun"/"tap"
     void    setNicMode(const QString& mode);     // 切换网卡模式（会重启网卡）
+    // 在线对端中与本机模式不一致的数量；suggestMode=对端多数模式（用于一键适配）。有则返回 true。
+    bool    nicModeMismatch(int& count, QString& suggestMode) const;
     QString myCvnIP() const;
     void    peerTraffic(const QString& publicId, quint64& sent, quint64& recv) const; // 按对端收发字节
     int     peerRttMs(const QString& publicId) const; // 与对端的 P2P 往返时延(ms)，-1=未知

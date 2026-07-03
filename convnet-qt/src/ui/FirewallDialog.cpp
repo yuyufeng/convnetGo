@@ -1,4 +1,5 @@
 #include "ui/FirewallDialog.h"
+#include "model/Identity.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -98,7 +99,26 @@ FirewallDialog::FirewallDialog(Firewall* fw, QWidget* parent)
     buttons->button(QDialogButtonBox::Ok)->setText(QStringLiteral("保存并应用"));
     buttons->button(QDialogButtonBox::Cancel)->setText(QStringLiteral("取消"));
 
+    // 网卡模式对防火墙生效范围的提示（模式不影响“规则的存储”，只影响“哪些规则生效”）
+    const bool tapMode = (Identity::instance().nicMode == QLatin1String("tap"));
+    auto* modeNote = new QLabel(this);
+    modeNote->setWordWrap(true);
+    modeNote->setTextFormat(Qt::RichText);
+    if (tapMode) {
+        modeNote->setText(QStringLiteral(
+            "<b>当前网卡：TAP（L2）</b> —— <span style='color:#f0b429'>端口/协议规则不生效</span>"
+            "（对 IPX 等非 IP 帧无意义），仅「动作=拒绝 + 指定对端ID」的“拉黑对端”规则有效。"));
+        modeNote->setStyleSheet(QStringLiteral(
+            "background:#332701;border:1px solid #7a5b00;border-radius:5px;padding:6px;"));
+    } else {
+        modeNote->setText(QStringLiteral(
+            "当前网卡：TUN（L3） —— 端口/协议/对端 规则均生效。"
+            "<span style='color:#8b929b'>（切到 TAP 后端口/协议规则将不生效，规则本身不会丢失。）</span>"));
+        modeNote->setStyleSheet(QStringLiteral("color:#a9b0b8;"));
+    }
+
     auto* layout = new QVBoxLayout(this);
+    layout->addWidget(modeNote);
     layout->addWidget(m_table, 1);
     layout->addLayout(rowBtns);
     layout->addWidget(addBox);
