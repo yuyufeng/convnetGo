@@ -43,7 +43,7 @@ const (
 	GROUP_OP_RESP           //33 通用应答 [ok(bool), message, payload]
 
 	// ---- IM 层协议：在线状态 ----
-	PRESENCE_NOTIFY    //34 推送 [userID, online(bool)]
+	PRESENCE_NOTIFY    //34 推送 [userID, online(bool), nicMode("tun"|"tap")]
 	PRESENCE_SUBSCRIBE //35 [ [userID...] ] 预留
 
 	// ---- IM 层协议：聊天（服务器存储转发，非网络帧）----
@@ -72,7 +72,12 @@ const (
 	// action: kick/grant/revoke/transfer/handover/disband
 	GROUP_MANAGE //50
 
-	UNKNKOWN //51
+	// 网卡模式上报（客户端 -> 服务器）：[mode("tun"|"tap")]。
+	// 服务器登记该用户当前模式，并随花名册(rosterEntry.NicMode)/在线态(PRESENCE_NOTIFY 第3元素)下发，
+	// 供对端 UI 提示“模式不一致无法互通”。纯本地模式，服务器不强制。
+	NIC_MODE_REPORT //51
+
+	UNKNKOWN //52
 )
 
 const (

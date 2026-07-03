@@ -75,7 +75,10 @@ enum Op {
     // 群管理：[groupID, action, targetUserID]（kick/grant/revoke/transfer/handover/disband）
     GROUP_MANAGE,         // 50
 
-    UNKNKOWN              // 51
+    // 网卡模式上报（客户端 -> 服务器）：[mode("tun"|"tap")]。服务器随花名册/在线态下发给对端。
+    NIC_MODE_REPORT,      // 51
+
+    UNKNKOWN              // 52
 };
 
 enum ClientMode {

@@ -4,6 +4,7 @@
 // header-only inline，避免改 CMake；无 Q_OBJECT，不需 moc。
 
 #include "model/Types.h"
+#include "model/Identity.h"
 
 #include <QWidget>
 #include <QMessageBox>
@@ -25,16 +26,37 @@ inline QString humanBytes(quint64 n)
 inline void showUserInfoDialog(QWidget* parent, const FriendInfo& f,
                                quint64 sent = 0, quint64 recv = 0)
 {
+    // 网卡模式行：对端 TUN/TAP；在线且与本机不一致时红字告警（无法互通）。
+    const QString myMode = Identity::instance().nicMode;
+    QString modeLine;
+    if (f.nicMode.isEmpty()) {
+        modeLine = QStringLiteral("未知");
+    } else {
+        const QString peerLabel = (f.nicMode == QLatin1String("tap"))
+                                      ? QStringLiteral("TAP（L2）")
+                                      : QStringLiteral("TUN（L3）");
+        if (f.online && !myMode.isEmpty() && f.nicMode != myMode) {
+            modeLine = QStringLiteral(
+                           "<span style='color:#f85149'><b>%1 ⚠ 与你(%2)不一致，虚拟网络无法互通</b></span>")
+                           .arg(peerLabel, myMode == QLatin1String("tap") ? QStringLiteral("TAP")
+                                                                          : QStringLiteral("TUN"));
+        } else {
+            modeLine = peerLabel;
+        }
+    }
+    const QString modeRow = QStringLiteral("网卡模式：%1<br>").arg(modeLine); // 预先成行，避免 %10 占位歧义
+
     const QString html =
-        QStringLiteral("<b>%1</b><br><br>"
-                       "用户ID：%2<br>"
-                       "虚拟IP：<b>%3</b><br>"
-                       "MAC：%4<br>"
-                       "状态：%5<br>"
-                       "对接方式：%6<br>"
-                       "已发送：%7<br>"
-                       "已接收：%8<br>"
-                       "PublicID：<span style='font-size:small'>%9</span>")
+        (QStringLiteral("<b>%1</b><br><br>"
+                        "用户ID：%2<br>"
+                        "虚拟IP：<b>%3</b><br>"
+                        "MAC：%4<br>"
+                        "状态：%5<br>"
+                        "对接方式：%6<br>")
+         + modeRow
+         + QStringLiteral("已发送：%7<br>"
+                          "已接收：%8<br>"
+                          "PublicID：<span style='font-size:small'>%9</span>"))
             .arg(f.nick.toHtmlEscaped())
             .arg(f.userId)
             .arg(f.cvnIP.isEmpty() ? QStringLiteral("(未分配)") : f.cvnIP.toHtmlEscaped())

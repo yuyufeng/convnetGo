@@ -44,6 +44,7 @@ static FriendInfo parseRoster(const QJsonObject& o)
     f.cvnIP = o.value("CvnIP").toString();
     f.mac = o.value("Mac").toString();
     f.online = o.value("Online").toBool();
+    f.nicMode = o.value("NicMode").toString();
     return f;
 }
 
@@ -131,6 +132,8 @@ void AppModel::setNicMode(const QString& mode)
         return;
     Identity::instance().nicMode = m;
     Identity::instance().save();
+    if (isConnected())
+        m_sig->send(NIC_MODE_REPORT, {m}); // 上报新模式给服务器 -> 转发给对端做一致性提示
     // 重启网卡使新模式生效（P2P 链路保留）
     if (m_netStarted) {
         m_tap->stop();
@@ -462,6 +465,7 @@ void AppModel::onFrame(int cmd, const QJsonArray& msg)
         if (m_p2p)
             m_p2p->setSelfPublicId(m_publicId);
         startNetwork(); // 起虚拟网卡（需 root；失败仅提示，IM 不受影响）
+        m_sig->send(NIC_MODE_REPORT, {Identity::instance().nicMode}); // 上报本机网卡模式给服务器
         emit loggedIn(m_publicId);
         refreshFriends();
         refreshGroups();
@@ -607,12 +611,19 @@ void AppModel::onFrame(int cmd, const QJsonArray& msg)
     case PRESENCE_NOTIFY: {
         const quint64 uid = toU64(msg.at(0));
         const bool online = msg.at(1).toBool();
-        if (m_friends.contains(uid))
+        const QString mode = msg.size() > 2 ? msg.at(2).toString() : QString(); // 对端网卡模式（可能缺省）
+        if (m_friends.contains(uid)) {
             m_friends[uid].online = online;
+            if (!mode.isEmpty())
+                m_friends[uid].nicMode = mode;
+        }
         for (auto& g : m_groups)
             for (auto& mem : g.members)
-                if (mem.userId == uid)
+                if (mem.userId == uid) {
                     mem.online = online;
+                    if (!mode.isEmpty())
+                        mem.nicMode = mode;
+                }
         // 只发 presenceChanged：UI 侧据此做“合并重建”。此前每次在线状态变化都额外
         // emit friendsChanged()+groupsChanged() 各触发一次全量树重建（共两次），大量
         // presence 事件会持续占满 GUI 线程，导致关窗口等一切操作卡顿。

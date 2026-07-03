@@ -8,6 +8,7 @@ package main
 import (
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/labstack/gommon/log"
@@ -116,6 +117,19 @@ func pushTo(userID uint64, cmd int, msg []interface{}) bool {
 
 // ---- 花名册构造 ----
 
+// userNicMode 记录在线用户上报的网卡模式（userID -> "tun"/"tap"）。仅内存、按会话；
+// 纯本地模式，服务器不强制，只随花名册/在线态转发给对端做“是否一致”提示。
+var userNicMode sync.Map
+
+func nicModeOf(userID uint64) string {
+	if v, ok := userNicMode.Load(userID); ok {
+		if s, ok2 := v.(string); ok2 && s != "" {
+			return s
+		}
+	}
+	return "tun" // 默认
+}
+
 func rosterEntry(userID uint64) map[string]interface{} {
 	u, _ := store.GetUser(userID)
 	return map[string]interface{}{
@@ -125,6 +139,7 @@ func rosterEntry(userID uint64) map[string]interface{} {
 		"CvnIP":    u.CvnIP,
 		"Mac":      u.Mac,
 		"Online":   isOnline(userID),
+		"NicMode":  nicModeOf(userID),
 	}
 }
 
@@ -181,9 +196,9 @@ func onClientRegistered(cvClient *peerClient) {
 	}
 	userID := userIDFromPublicID(cvClient.PublicID)
 
-	// 向所有网络对端（好友∪同组成员）广播上线
+	// 向所有网络对端（好友∪同组成员）广播上线（附网卡模式，供对端判断是否一致）
 	for _, p := range store.NetworkPeers(userID) {
-		pushTo(p, PRESENCE_NOTIFY, []interface{}{userID, true})
+		pushTo(p, PRESENCE_NOTIFY, []interface{}{userID, true, nicModeOf(userID)})
 	}
 
 	// 下发待处理的好友申请（不清空，接受/拒绝时才移除）
@@ -283,8 +298,9 @@ func onClientDisconnected(publicID string) {
 	}
 	userID := userIDFromPublicID(publicID)
 	for _, p := range store.NetworkPeers(userID) {
-		pushTo(p, PRESENCE_NOTIFY, []interface{}{userID, false})
+		pushTo(p, PRESENCE_NOTIFY, []interface{}{userID, false, nicModeOf(userID)})
 	}
+	userNicMode.Delete(userID) // 会话结束清理，下次登录重新上报
 }
 
 // ===================== 主分发 =====================
@@ -520,6 +536,17 @@ func handleIM(cvClient *peerClient, cmd int, msg []interface{}) {
 
 	case PRESENCE_SUBSCRIBE:
 		// M1：在线态自动推送，无需订阅，忽略。
+
+	case NIC_MODE_REPORT:
+		// 客户端上报本机网卡模式；登记并转发给所有网络对端（借 PRESENCE_NOTIFY 携带模式）
+		mode := argStr(msg, 0)
+		if mode != "tap" {
+			mode = "tun"
+		}
+		userNicMode.Store(self, mode)
+		for _, p := range store.NetworkPeers(self) {
+			pushTo(p, PRESENCE_NOTIFY, []interface{}{self, true, mode})
+		}
 
 	// ---------- 聊天（存储转发）----------
 	case CHAT_SEND:

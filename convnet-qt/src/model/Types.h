@@ -14,6 +14,7 @@ struct FriendInfo {
     QString mac;
     bool    online = false;
     QString connMethod; // 网络层对接方式（P2P直连/服务器中继/连接中…），运行期由 P2PManager 更新
+    QString nicMode;    // 对端网卡模式 "tun"/"tap"（服务器随花名册/在线态下发；用于一致性提示）
 };
 
 struct GroupInfo {
