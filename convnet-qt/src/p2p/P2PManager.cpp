@@ -117,6 +117,13 @@ int P2PManager::rttMs(const QString& peerPublicId) const
     return link ? link->rttMs() : -1;
 }
 
+bool P2PManager::isP2PDirect(const QString& peerPublicId) const
+{
+    std::lock_guard<std::mutex> lk(m_linksMtx);
+    PeerLink* link = m_links.value(peerPublicId, nullptr);
+    return link && link->method() == PeerLink::Method::P2P;
+}
+
 QString P2PManager::methodText(const QString& peerPublicId) const
 {
     PeerLink* link = m_links.value(peerPublicId, nullptr);

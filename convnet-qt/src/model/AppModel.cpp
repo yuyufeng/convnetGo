@@ -293,6 +293,12 @@ int AppModel::peerRttMs(const QString& publicId) const
     return m_p2p ? m_p2p->rttMs(publicId) : -1;
 }
 
+bool AppModel::peerViaRelay(const QString& publicId) const
+{
+    // 非 P2P 直连（中继/连接中/失败/未建链）均视为“经服务器中转”
+    return m_p2p ? !m_p2p->isP2PDirect(publicId) : true;
+}
+
 bool AppModel::isConnected() const { return m_sig->isConnected(); }
 
 void AppModel::onSocketConnected()

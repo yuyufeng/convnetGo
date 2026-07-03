@@ -72,6 +72,7 @@ public:
     QString myCvnIP() const;
     void    peerTraffic(const QString& publicId, quint64& sent, quint64& recv) const; // 按对端收发字节
     int     peerRttMs(const QString& publicId) const; // 与对端的 P2P 往返时延(ms)，-1=未知
+    bool    peerViaRelay(const QString& publicId) const; // true=经服务器中转（非 P2P 直连）
     Firewall* firewall() const { return m_fw; } // 供防火墙设置界面使用
 
 signals:

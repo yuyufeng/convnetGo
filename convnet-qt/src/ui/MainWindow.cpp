@@ -71,7 +71,7 @@ int signalBars(bool online, int rttMs)
 }
 
 // 左侧信号格 + 右侧圆形头像。信号格数按延时递减：每 50ms 少一格（<50ms=4格）。
-QIcon makeAvatar(const QString& name, bool online, int rttMs)
+QIcon makeAvatar(const QString& name, bool online, int rttMs, bool relay = false)
 {
     QPixmap pm(46, 28);
     pm.fill(Qt::transparent);
@@ -79,26 +79,39 @@ QIcon makeAvatar(const QString& name, bool online, int rttMs)
     p.setRenderHint(QPainter::Antialiasing);
     p.setPen(Qt::NoPen);
 
-    // 信号格
-    int bars;
-    QColor barColor;
-    const int sb = signalBars(online, rttMs);
-    if (sb == -1) {
-        bars = 0;
-        barColor = QColor("#4a525b");
-    } else if (sb == -2) {
-        bars = 0;
-        barColor = QColor("#6b7178"); // 在线但延时未知/测量中
+    if (relay) {
+        // 经服务器中转：不画信号格（无直连 RTT 意义），改画橙色“中转”小牌
+        p.setBrush(QColor("#d29922"));
+        p.drawRoundedRect(QRect(1, 6, 16, 16), 3, 3);
+        p.setPen(Qt::white);
+        QFont rf = p.font();
+        rf.setBold(true);
+        rf.setPixelSize(11);
+        p.setFont(rf);
+        p.drawText(QRect(1, 6, 16, 16), Qt::AlignCenter, QStringLiteral("中"));
+        p.setPen(Qt::NoPen);
     } else {
-        bars = sb;
-        barColor = bars >= 3 ? QColor("#3fb950") : (bars >= 1 ? QColor("#d29922") : QColor("#f85149"));
-    }
-    static const int bx[4] = {1, 5, 9, 13};
-    static const int bh[4] = {6, 10, 14, 18};
-    for (int i = 0; i < 4; ++i) {
-        const QRect r(bx[i], 24 - bh[i], 3, bh[i]);
-        p.setBrush(i < bars ? barColor : QColor("#2b3138"));
-        p.drawRoundedRect(r, 1, 1);
+        // 信号格（P2P 直连才有意义）
+        int bars;
+        QColor barColor;
+        const int sb = signalBars(online, rttMs);
+        if (sb == -1) {
+            bars = 0;
+            barColor = QColor("#4a525b");
+        } else if (sb == -2) {
+            bars = 0;
+            barColor = QColor("#6b7178"); // 在线但延时未知/测量中
+        } else {
+            bars = sb;
+            barColor = bars >= 3 ? QColor("#3fb950") : (bars >= 1 ? QColor("#d29922") : QColor("#f85149"));
+        }
+        static const int bx[4] = {1, 5, 9, 13};
+        static const int bh[4] = {6, 10, 14, 18};
+        for (int i = 0; i < 4; ++i) {
+            const QRect r(bx[i], 24 - bh[i], 3, bh[i]);
+            p.setBrush(i < bars ? barColor : QColor("#2b3138"));
+            p.drawRoundedRect(r, 1, 1);
+        }
     }
 
     // 头像圆（右侧，x 偏移 18）
@@ -480,7 +493,8 @@ void MainWindow::onFriendsChanged()
             ? QStringLiteral("  ⚠%1").arg(f.nicMode == QLatin1String("tap") ? "TAP" : "TUN") : QString();
         auto* item = new QTreeWidgetItem(m_friendRoot);
         item->setText(0, unreadBadge(key) + nick + modeTag);
-        item->setIcon(0, makeAvatar(nick, f.online, m_model->peerRttMs(f.publicId))); // 信号格+头像
+        const bool fRelay = f.online && m_model->peerViaRelay(f.publicId);
+        item->setIcon(0, makeAvatar(nick, f.online, m_model->peerRttMs(f.publicId), fRelay)); // 信号格/中转标记+头像
         item->setForeground(0, modeMism ? QColor("#f85149")
                                         : (f.online ? QColor("#e6e9ee") : QColor("#8b929b")));
         item->setText(1, f.cvnIP);                     // 右列显示虚拟IP（Radmin 风格）
@@ -535,7 +549,8 @@ void MainWindow::onGroupsChanged()
                 ? QStringLiteral("  ⚠%1").arg(mem.nicMode == QLatin1String("tap") ? "TAP" : "TUN") : QString();
             auto* mi = new QTreeWidgetItem(item);
             mi->setText(0, mnick + self + mTag);
-            mi->setIcon(0, makeAvatar(mnick, mem.online, m_model->peerRttMs(mem.publicId)));
+            const bool memRelay = mem.online && m_model->peerViaRelay(mem.publicId);
+            mi->setIcon(0, makeAvatar(mnick, mem.online, m_model->peerRttMs(mem.publicId), memRelay));
             mi->setForeground(0, mMism ? QColor("#f85149")
                                        : (mem.online ? QColor("#e6e9ee") : QColor("#8b929b")));
             mi->setText(1, mem.cvnIP);
@@ -1017,11 +1032,12 @@ void MainWindow::updateSignalIcons()
             continue;
         const QString nick = f.nick.isEmpty() ? QStringLiteral("(无昵称)") : f.nick;
         const int rtt = m_model->peerRttMs(f.publicId);
-        const int sig = signalBars(f.online, rtt);
+        const bool relay = f.online && m_model->peerViaRelay(f.publicId);
+        const int sig = relay ? -3 : signalBars(f.online, rtt); // -3=中转标记（区别于信号格签名）
         const QVariant prev = item->data(0, kRoleIconSig);
         if (prev.isValid() && prev.toInt() == sig)
             continue; // 外观未变，跳过重绘
-        item->setIcon(0, makeAvatar(nick, f.online, rtt));
+        item->setIcon(0, makeAvatar(nick, f.online, rtt, relay));
         item->setData(0, kRoleIconSig, sig);
     }
     // 群成员（展开时可见）
@@ -1039,10 +1055,11 @@ void MainWindow::updateSignalIcons()
                 if (mem.userId == uid) {
                     const QString nick = mem.nick.isEmpty() ? QStringLiteral("(无昵称)") : mem.nick;
                     const int rtt = m_model->peerRttMs(mem.publicId);
-                    const int sig = signalBars(mem.online, rtt);
+                    const bool relay = mem.online && m_model->peerViaRelay(mem.publicId);
+                    const int sig = relay ? -3 : signalBars(mem.online, rtt);
                     const QVariant prev = mitem->data(0, kRoleIconSig);
                     if (!(prev.isValid() && prev.toInt() == sig)) {
-                        mitem->setIcon(0, makeAvatar(nick, mem.online, rtt));
+                        mitem->setIcon(0, makeAvatar(nick, mem.online, rtt, relay));
                         mitem->setData(0, kRoleIconSig, sig);
                     }
                     break;

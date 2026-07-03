@@ -28,6 +28,7 @@ public:
 
     QString methodText(const QString& peerPublicId) const; // 中文对接方式
     int     rttMs(const QString& peerPublicId) const;        // 往返时延(ms)，-1=未知
+    bool    isP2PDirect(const QString& peerPublicId) const;  // 是否 P2P 直连（否则视为经服务器中转）
 
     // 数据面：出站经 P2P 发送（未建立则返回 false，交由中继）；入站帧统一回调
     bool sendFrame(const QString& peerPublicId, const QByteArray& data);
